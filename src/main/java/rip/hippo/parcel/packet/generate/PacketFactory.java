@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
-import static org.objectweb.asm.Opcodes.LONG;
 
 /**
  * @author Hippo
@@ -67,13 +66,13 @@ public enum PacketFactory {
             constructorMethodNode.instructions.add(new InsnNode(RETURN));
             classNode.methods.add(constructorMethodNode);
 
+
             for (Method method : raw.getClass().getDeclaredMethods()) {
                 GetterField getterField = method.getAnnotation(GetterField.class);
                 SetterField setterField = method.getAnnotation(SetterField.class);
 
                 if (getterField != null) {
                     long fieldOffset = fieldOffsetMap.get(getterField.name());
-
 
                     MethodNode methodNode = new MethodNode(ACC_PUBLIC, method.getName(), Type.getMethodDescriptor(method), null, null);
                     methodNode.instructions = new InsnList();
@@ -116,8 +115,56 @@ public enum PacketFactory {
                         methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", integerMethod, String.format("(Ljava/lang/Object;J)%s", Type.getDescriptor(method.getReturnType()))));
                         methodNode.instructions.add(new InsnNode(IRETURN));
                     }
-                } else if (setterField != null) {
 
+                    classNode.methods.add(methodNode);
+                } else if (setterField != null) {
+                    long fieldOffset = fieldOffsetMap.get(setterField.name());
+
+                    MethodNode methodNode = new MethodNode(ACC_PUBLIC, method.getName(), Type.getMethodDescriptor(method), null, null);
+                    methodNode.instructions = new InsnList();
+                    methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC, unsafeUtilInternal, "getUnsafe", "()Lsun/misc/Unsafe;"));
+                    methodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+                    methodNode.instructions.add(new FieldInsnNode(GETFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
+                    methodNode.instructions.add(new LdcInsnNode(fieldOffset));
+
+
+                    switch (setterField.type()) {
+                        case BOOLEAN:
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putBoolean", "(Ljava/lang/Object;JZ)V"));
+                            break;
+                        case BYTE:
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putByte", "(Ljava/lang/Object;JB)V"));
+                            break;
+                        case SHORT:
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putShort", "(Ljava/lang/Object;JS)V"));
+                            break;
+                        case CHAR:
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putChar", "(Ljava/lang/Object;JC)V"));
+                            break;
+                        case INT:
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putInt", "(Ljava/lang/Object;JI)V"));
+                            break;
+                        case LONG:
+                            methodNode.instructions.add(new VarInsnNode(LLOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putLong", "(Ljava/lang/Object;JJ)V"));
+                            break;
+                        case DOUBLE:
+                            methodNode.instructions.add(new VarInsnNode(DLOAD, 1));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putDouble", "(Ljava/lang/Object;JD)V"));
+                            break;
+                        case OBJECT:
+                            Class<?> parameter = method.getParameterTypes()[0];
+                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(parameter)));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putBoolean", String.format("(Ljava/lang/Object;J%s)V", Type.getDescriptor(parameter))));
+                    }
+                    methodNode.instructions.add(new InsnNode(RETURN));
+                    classNode.methods.add(methodNode);
                 }
             }
 
