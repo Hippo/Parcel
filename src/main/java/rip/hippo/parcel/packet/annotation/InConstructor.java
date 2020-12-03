@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * @version 1.0.0, 12/2/20
  * @since 1.0.0
  */
-@Target(ElementType.METHOD)
+@Target(ElementType.CONSTRUCTOR)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface InConstructor {
 }
