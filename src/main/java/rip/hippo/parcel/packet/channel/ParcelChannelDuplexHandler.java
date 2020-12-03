@@ -3,6 +3,7 @@ package rip.hippo.parcel.packet.channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import rip.hippo.parcel.Parcel;
 
 /**
  * @author Hippo
@@ -10,6 +11,12 @@ import io.netty.channel.ChannelPromise;
  * @since 1.0.0
  */
 public final class ParcelChannelDuplexHandler extends ChannelDuplexHandler {
+
+    private final Parcel parcel;
+
+    public ParcelChannelDuplexHandler(Parcel parcel) {
+        this.parcel = parcel;
+    }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
