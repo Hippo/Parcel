@@ -1,8 +1,8 @@
 package rip.hippo.parcel.wrapper;
 
+import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 
-import java.nio.channels.Channel;
 
 /**
  * @author Hippo
