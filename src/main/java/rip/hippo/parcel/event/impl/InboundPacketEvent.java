@@ -14,21 +14,9 @@ public final class InboundPacketEvent implements ParcelEvent {
     private final Player sender;
     private final Packet packet;
 
-    private boolean cancel;
-
     public InboundPacketEvent(Player sender, Packet packet) {
         this.sender = sender;
         this.packet = packet;
-    }
-
-    @Override
-    public void setCancelled(boolean cancel) {
-        this.cancel = cancel;
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return cancel;
     }
 
     public Player getSender() {
