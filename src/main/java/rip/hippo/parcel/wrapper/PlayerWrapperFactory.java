@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+import rip.hippo.parcel.loader.StubClassLoader;
 import rip.hippo.parcel.plugin.ParcelPlugin;
 
 import javax.management.ReflectionException;
@@ -66,16 +67,6 @@ public enum PlayerWrapperFactory {
             return (PlayerWrapper) dynamicClass.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private static final class StubClassLoader extends ClassLoader {
-        public StubClassLoader() {
-            super(ParcelPlugin.class.getClassLoader());
-        }
-
-        public Class<?> createClass(String className, byte[] classBytes) {
-            return super.defineClass(className, classBytes, 0, classBytes.length);
         }
     }
 }
