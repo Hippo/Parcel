@@ -4,6 +4,9 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import rip.hippo.parcel.Parcel;
+import rip.hippo.parcel.packet.Packet;
+import rip.hippo.parcel.packet.generate.PacketFactory;
+import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
 
 /**
  * @author Hippo

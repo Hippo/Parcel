@@ -51,7 +51,6 @@ public enum PacketFactory {
                 }
             }
 
-
             ClassNode classNode = new ClassNode();
             classNode.visit(V1_8, ACC_PUBLIC | ACC_FINAL, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), null, "java/lang/Object", new String[] {packetWrapperInternal});
 
@@ -163,7 +162,7 @@ public enum PacketFactory {
                             Class<?> parameter = method.getParameterTypes()[0];
                             methodNode.instructions.add(new VarInsnNode(ALOAD, 1));
                             methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(parameter)));
-                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putObject", String.format("(Ljava/lang/Object;J%s)V", Type.getDescriptor(parameter))));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putObject", "(Ljava/lang/Object;JLjava/lang/Object;)V"));
                     }
                     methodNode.instructions.add(new InsnNode(RETURN));
                     classNode.methods.add(methodNode);
