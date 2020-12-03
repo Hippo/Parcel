@@ -1,6 +1,9 @@
 package rip.hippo.parcel;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import rip.hippo.parcel.event.ParcelEvent;
+import rip.hippo.parcel.packet.inject.PlayerChannelInjector;
+import rip.hippo.parcel.wrapper.PlayerWrapper;
 
 /**
  * @author Hippo
@@ -9,5 +12,8 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public interface Parcel {
     void subscribe(JavaPlugin javaPlugin);
+    void post(ParcelEvent parcelEvent);
     void unsubscribe(JavaPlugin javaPlugin);
+    PlayerWrapper getPlayerWrapper();
+    PlayerChannelInjector getPlayerChannelInjector();
 }
