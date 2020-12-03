@@ -6,6 +6,4 @@ package rip.hippo.parcel.event;
  * @since 1.0.0
  */
 public interface ParcelEvent {
-    void setCancelled(boolean cancel);
-    boolean isCancelled();
 }

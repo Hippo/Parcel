@@ -23,7 +23,7 @@ public final class StandardChannelInjector implements PlayerChannelInjector {
     public void inject(Player player) {
         Channel channel = parcel.getPlayerWrapper().getChannel(player);
         if (channel != null && channel.pipeline().get("parcel_pipeline") == null) {
-            channel.pipeline().addBefore("packet_handler", "parcel_pipeline", new ParcelChannelDuplexHandler(parcel));
+            channel.pipeline().addBefore("packet_handler", "parcel_pipeline", new ParcelChannelDuplexHandler(parcel, player));
         }
     }
 

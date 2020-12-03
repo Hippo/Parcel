@@ -38,6 +38,10 @@ public enum PacketFactory {
         String rawClassName = raw.getClass().getSimpleName();
         Class<? extends Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
 
+        if (packetClass == null) {
+            return null;
+        }
+
         if (!GENERATED_PACKET_CLASSES.contains(rawClassName)) {
             String packetWrapperInternal = Type.getInternalName(packetClass);
             String unsafeUtilInternal = Type.getInternalName(UnsafeUtil.class);

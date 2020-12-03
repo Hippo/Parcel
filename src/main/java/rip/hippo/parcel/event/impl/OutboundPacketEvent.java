@@ -21,12 +21,10 @@ public final class OutboundPacketEvent implements ParcelEvent {
         this.packet = packet;
     }
 
-    @Override
     public void setCancelled(boolean cancel) {
         this.cancel = cancel;
     }
 
-    @Override
     public boolean isCancelled() {
         return cancel;
     }
