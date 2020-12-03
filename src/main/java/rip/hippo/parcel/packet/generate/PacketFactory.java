@@ -7,6 +7,7 @@ import rip.hippo.parcel.loader.StubClassLoader;
 import rip.hippo.parcel.packet.Packet;
 import rip.hippo.parcel.packet.annotation.GetterField;
 import rip.hippo.parcel.packet.annotation.SetterField;
+import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
 import rip.hippo.parcel.util.UnsafeUtil;
 
 import java.lang.reflect.Field;
@@ -25,16 +26,16 @@ import static org.objectweb.asm.Opcodes.*;
 public enum PacketFactory {
     ;
 
-    private static final Map<String, Class<Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<Packet>>() {{
-
+    private static final Map<String, Class<? extends Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<? extends Packet>>() {{
+        put("PacketPlayInChat", PacketPlayInChat.class);
     }});
-    private static final Map<Class<Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
+    private static final Map<Class<? extends Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
     private static final Set<String> GENERATED_PACKET_CLASSES = new HashSet<>();
     private static final StubClassLoader CLASS_LOADER = new StubClassLoader();
 
     public static Packet create(Object raw) {
         String rawClassName = raw.getClass().getSimpleName();
-        Class<Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
+        Class<? extends Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
 
         if (!GENERATED_PACKET_CLASSES.contains(rawClassName)) {
             String packetWrapperInternal = Type.getInternalName(packetClass);
