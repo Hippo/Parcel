@@ -10,6 +10,8 @@ import rip.hippo.parcel.plugin.ParcelPlugin;
 
 import javax.management.ReflectionException;
 
+import java.io.FileOutputStream;
+
 import static org.objectweb.asm.Opcodes.*;
 
 /**
@@ -24,14 +26,16 @@ public enum PlayerWrapperFactory {
     private static final StubClassLoader CLASS_LOADER = new StubClassLoader();
 
     public static PlayerWrapper createPlayerWrapper() {
-        String playerWrapperInternal = Type.getDescriptor(PlayerWrapper.class);
+        String playerInternal = Type.getInternalName(Player.class);
+        String channelInternal = Type.getInternalName(Channel.class);
+        String playerWrapperInternal = Type.getInternalName(PlayerWrapper.class);
         String craftPlayerInternal = String.format("org/bukkit/craftbukkit/%s/entity/CraftPlayer", VERSION);
         String entityPlayerInternal = String.format("net/minecraft/server/%s/EntityPlayer", VERSION);
         String playerConnectionInternal = String.format("net/minecraft/server/%s/PlayerConnection", VERSION);
         String networkManagerInternal = String.format("net/minecraft/server/%s/NetworkManager", VERSION);
 
         ClassNode classNode = new ClassNode();
-        classNode.visit(V1_8, ACC_PUBLIC | ACC_FINAL, "rip/hipp/parcel/generated/GeneratedPlayerWrapper", null, "java/lang/Object", new String[] {playerWrapperInternal});
+        classNode.visit(V1_8, ACC_PUBLIC | ACC_FINAL, "rip/hippo/parcel/generated/GeneratedPlayerWrapper", null, "java/lang/Object", new String[] {playerWrapperInternal});
 
         MethodNode constructorMethodNode = new MethodNode(ACC_PUBLIC, "<init>", "()V", null, null);
         constructorMethodNode.instructions = new InsnList();
@@ -39,14 +43,14 @@ public enum PlayerWrapperFactory {
         constructorMethodNode.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V"));
         constructorMethodNode.instructions.add(new InsnNode(RETURN));
 
-        MethodNode getChannelMethodNode = new MethodNode(ACC_PUBLIC, "getChannel", String.format("(%s)%s", Type.getDescriptor(Player.class), Type.getDescriptor(Channel.class)), null, null);
+        MethodNode getChannelMethodNode = new MethodNode(ACC_PUBLIC, "getChannel", String.format("(%s)%s", String.format("L%s;", playerInternal), String.format("L%s;", channelInternal)), null, null);
         getChannelMethodNode.instructions = new InsnList();
         getChannelMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
         getChannelMethodNode.instructions.add(new TypeInsnNode(CHECKCAST, craftPlayerInternal));
         getChannelMethodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, craftPlayerInternal, "getHandle", String.format("()L%s;", entityPlayerInternal)));
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, entityPlayerInternal, "playerConnection", String.format("L%s;", playerConnectionInternal)));
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, playerConnectionInternal, "neworkManager", String.format("L%s;", networkManagerInternal)));
-        getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, networkManagerInternal, "channel", Type.getDescriptor(Channel.class)));
+        getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, networkManagerInternal, "channel", String.format("L%s;", channelInternal)));
         getChannelMethodNode.instructions.add(new InsnNode(ARETURN));
 
         classNode.methods.add(constructorMethodNode);
@@ -58,6 +62,11 @@ public enum PlayerWrapperFactory {
         byte[] classBytes = classWriter.toByteArray();
 
         try {
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream("nigga.class")) {
+                fileOutputStream.write(classBytes);
+            }
+
             Class<?> dynamicClass = CLASS_LOADER.createClass(classNode.name.replace('/', '.'), classBytes);
             return (PlayerWrapper) dynamicClass.newInstance();
         } catch (Exception e) {
