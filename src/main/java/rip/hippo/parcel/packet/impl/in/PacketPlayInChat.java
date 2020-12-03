@@ -8,4 +8,12 @@ import rip.hippo.parcel.packet.Packet;
  * @since 1.0.0
  */
 public abstract class PacketPlayInChat implements Packet {
+
+
+    private Object raw;
+
+
+    public PacketPlayInChat(Object raw) {
+        this.raw = raw;
+    }
 }
