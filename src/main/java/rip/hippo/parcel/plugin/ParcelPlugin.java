@@ -1,9 +1,11 @@
 package rip.hippo.parcel.plugin;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import rip.hippo.lwjeb.bus.PubSub;
 import rip.hippo.parcel.Parcel;
 import rip.hippo.parcel.event.ParcelEvent;
+import rip.hippo.parcel.listener.PlayerConnectionListener;
 import rip.hippo.parcel.packet.inject.PlayerChannelInjector;
 import rip.hippo.parcel.packet.inject.impl.StandardChannelInjector;
 import rip.hippo.parcel.wrapper.PlayerWrapper;
@@ -24,6 +26,11 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
         this.pubSub = new PubSub<>();
         this.playerWrapper = PlayerWrapperFactory.createPlayerWrapper();
         this.playerChannelInjector = new StandardChannelInjector(this);
+    }
+
+    @Override
+    public void onEnable() {
+        Bukkit.getPluginManager().registerEvents(new PlayerConnectionListener(this), this);
     }
 
     @Override
