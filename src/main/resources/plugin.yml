@@ -1,0 +1,4 @@
+name: Parcel
+main: rip.hippo.parcel.plugin.ParcelPlugin
+version: 1.0.0
+author: Hippo
