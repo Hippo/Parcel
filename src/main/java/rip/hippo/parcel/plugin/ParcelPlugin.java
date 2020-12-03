@@ -28,6 +28,11 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
     }
 
     @Override
+    public void post(ParcelEvent parcelEvent) {
+        pubSub.post(parcelEvent).dispatch();
+    }
+
+    @Override
     public void unsubscribe(JavaPlugin javaPlugin) {
         pubSub.subscribe(javaPlugin);
     }
