@@ -14,7 +14,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -29,11 +28,13 @@ public enum PacketFactory {
     private static final Map<String, Class<? extends Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<? extends Packet>>() {{
         put("PacketPlayInChat", PacketPlayInChat.class);
     }});
+
     private static final Map<Class<? extends Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
     private static final Set<String> GENERATED_PACKET_CLASSES = new HashSet<>();
     private static final StubClassLoader CLASS_LOADER = new StubClassLoader();
 
-    public static Packet create(Object raw) {
+    @SuppressWarnings("unchecked")
+    public static <T extends Packet> T create(Object raw) {
         String rawClassName = raw.getClass().getSimpleName();
         Class<? extends Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
 
@@ -68,7 +69,7 @@ public enum PacketFactory {
             classNode.methods.add(constructorMethodNode);
 
 
-            for (Method method : raw.getClass().getDeclaredMethods()) {
+            for (Method method : packetClass.getDeclaredMethods()) {
                 GetterField getterField = method.getAnnotation(GetterField.class);
                 SetterField setterField = method.getAnnotation(SetterField.class);
 
@@ -107,7 +108,7 @@ public enum PacketFactory {
                             methodNode.instructions.add(new InsnNode(DRETURN));
                             break;
                         case OBJECT:
-                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getObject", "(Ljava/lang/Object;J)J"));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getObject", "(Ljava/lang/Object;J)Ljava/lang/Object;"));
                             methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(method.getReturnType())));
                             methodNode.instructions.add(new InsnNode(ARETURN));
                     }
@@ -160,15 +161,19 @@ public enum PacketFactory {
                             break;
                         case OBJECT:
                             Class<?> parameter = method.getParameterTypes()[0];
-                            methodNode.instructions.add(new VarInsnNode(ILOAD, 1));
+                            methodNode.instructions.add(new VarInsnNode(ALOAD, 1));
                             methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(parameter)));
-                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putBoolean", String.format("(Ljava/lang/Object;J%s)V", Type.getDescriptor(parameter))));
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putObject", String.format("(Ljava/lang/Object;J%s)V", Type.getDescriptor(parameter))));
                     }
                     methodNode.instructions.add(new InsnNode(RETURN));
                     classNode.methods.add(methodNode);
                 }
             }
 
+            ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            classNode.accept(classWriter);
+            byte[] classBytes = classWriter.toByteArray();
+            CLASS_LOADER.createClass(classNode.name.replace('/', '.'), classBytes);
         }
 
         PacketFunction objectWrapperFunction = PACKET_INSTANCE_FUNCTION_MAP.computeIfAbsent(packetClass, ignored -> {
@@ -184,16 +189,16 @@ public enum PacketFactory {
             constructorMethodNode.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V"));
             constructorMethodNode.instructions.add(new InsnNode(RETURN));
 
-            MethodNode acceptMethodNode = new MethodNode(ACC_PUBLIC, "accept", String.format("(Ljava/lang/Object)L%s;", packetInternalName), null, null);
-            acceptMethodNode.instructions = new InsnList();
-            acceptMethodNode.instructions.add(new TypeInsnNode(NEW, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName)));
-            acceptMethodNode.instructions.add(new InsnNode(DUP));
-            acceptMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
-            acceptMethodNode.instructions.add(new MethodInsnNode(INVOKESPECIAL, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "<init>", "(Ljava/lang/Object;)V"));
-            acceptMethodNode.instructions.add(new InsnNode(ARETURN));
+            MethodNode applyMethodNode = new MethodNode(ACC_PUBLIC, "apply", String.format("(Ljava/lang/Object;)L%s;", packetInternalName), null, null);
+            applyMethodNode.instructions = new InsnList();
+            applyMethodNode.instructions.add(new TypeInsnNode(NEW, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName)));
+            applyMethodNode.instructions.add(new InsnNode(DUP));
+            applyMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
+            applyMethodNode.instructions.add(new MethodInsnNode(INVOKESPECIAL, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "<init>", "(Ljava/lang/Object;)V"));
+            applyMethodNode.instructions.add(new InsnNode(ARETURN));
 
             classNode.methods.add(constructorMethodNode);
-            classNode.methods.add(acceptMethodNode);
+            classNode.methods.add(applyMethodNode);
 
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
             classNode.accept(classWriter);
@@ -208,7 +213,7 @@ public enum PacketFactory {
             }
         });
 
-        return objectWrapperFunction.apply(raw);
+        return (T) objectWrapperFunction.apply(raw);
     }
 
 }
