@@ -5,8 +5,12 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import rip.hippo.parcel.loader.StubClassLoader;
 import rip.hippo.parcel.packet.Packet;
+import rip.hippo.parcel.packet.annotation.EnumWrapper;
 import rip.hippo.parcel.packet.annotation.GetterField;
 import rip.hippo.parcel.packet.annotation.SetterField;
+import rip.hippo.parcel.packet.impl.in.PacketPlayInAbilities;
+import rip.hippo.parcel.packet.impl.in.PacketPlayInArmAnimation;
+import rip.hippo.parcel.packet.impl.in.PacketPlayInBlockDig;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
 import rip.hippo.parcel.util.UnsafeUtil;
 
@@ -27,6 +31,9 @@ public enum PacketFactory {
 
     private static final Map<String, Class<? extends Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<? extends Packet>>() {{
         put("PacketPlayInChat", PacketPlayInChat.class);
+        put("PacketPlayInAbilities", PacketPlayInAbilities.class);
+        put("PacketPlayInArmAnimation", PacketPlayInArmAnimation.class);
+        put("PacketPlayInBlockDig", PacketPlayInBlockDig.class);
     }});
 
     private static final Map<Class<? extends Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
@@ -49,9 +56,11 @@ public enum PacketFactory {
             GENERATED_PACKET_CLASSES.add(rawClassName);
 
             Map<String, Long> fieldOffsetMap = new HashMap<>();
+            Map<String, Class<?>> fieldTypeMap = new HashMap<>();
             for (Field field : raw.getClass().getDeclaredFields()) {
                 if (!Modifier.isStatic(field.getModifiers())) {
                     fieldOffsetMap.put(field.getName(), UnsafeUtil.getUnsafe().objectFieldOffset(field));
+                    fieldTypeMap.put(field.getName(), field.getType());
                 }
             }
 
@@ -111,8 +120,15 @@ public enum PacketFactory {
                             methodNode.instructions.add(new InsnNode(DRETURN));
                             break;
                         case OBJECT:
+                            EnumWrapper annotation = method.getAnnotation(EnumWrapper.class);
                             methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getObject", "(Ljava/lang/Object;J)Ljava/lang/Object;"));
-                            methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(method.getReturnType())));
+                            if (annotation != null) {
+                                methodNode.instructions.add(new TypeInsnNode(CHECKCAST, "java/lang/Enum"));
+                                methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Enum", "name", "()Ljava/lang/String;"));
+                                methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC, Type.getInternalName(annotation.value()), "valueOf", String.format("(Ljava/lang/String;)%s", Type.getDescriptor(annotation.value()))));
+                            } else {
+                                methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(method.getReturnType())));
+                            }
                             methodNode.instructions.add(new InsnNode(ARETURN));
                     }
 
@@ -163,9 +179,15 @@ public enum PacketFactory {
                             methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putDouble", "(Ljava/lang/Object;JD)V"));
                             break;
                         case OBJECT:
+                            EnumWrapper annotation = method.getAnnotation(EnumWrapper.class);
                             Class<?> parameter = method.getParameterTypes()[0];
                             methodNode.instructions.add(new VarInsnNode(ALOAD, 1));
-                            methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(parameter)));
+                            if (annotation != null) {
+                                methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Enum", "name", "()Ljava/lang/String;"));
+                                methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC, Type.getInternalName(fieldTypeMap.get(setterField.name())), "valueOf", String.format("(Ljava/lang/String;)%s", Type.getDescriptor(annotation.value()))));
+                            } else {
+                                methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(parameter)));
+                            }
                             methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "putObject", "(Ljava/lang/Object;JLjava/lang/Object;)V"));
                     }
                     methodNode.instructions.add(new InsnNode(RETURN));
