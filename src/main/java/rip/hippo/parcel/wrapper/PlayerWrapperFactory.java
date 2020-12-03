@@ -49,7 +49,7 @@ public enum PlayerWrapperFactory {
         getChannelMethodNode.instructions.add(new TypeInsnNode(CHECKCAST, craftPlayerInternal));
         getChannelMethodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, craftPlayerInternal, "getHandle", String.format("()L%s;", entityPlayerInternal)));
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, entityPlayerInternal, "playerConnection", String.format("L%s;", playerConnectionInternal)));
-        getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, playerConnectionInternal, "neworkManager", String.format("L%s;", networkManagerInternal)));
+        getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, playerConnectionInternal, "networkManager", String.format("L%s;", networkManagerInternal)));
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, networkManagerInternal, "channel", String.format("L%s;", channelInternal)));
         getChannelMethodNode.instructions.add(new InsnNode(ARETURN));
 
@@ -62,11 +62,6 @@ public enum PlayerWrapperFactory {
         byte[] classBytes = classWriter.toByteArray();
 
         try {
-
-            try (FileOutputStream fileOutputStream = new FileOutputStream("nigga.class")) {
-                fileOutputStream.write(classBytes);
-            }
-
             Class<?> dynamicClass = CLASS_LOADER.createClass(classNode.name.replace('/', '.'), classBytes);
             return (PlayerWrapper) dynamicClass.newInstance();
         } catch (Exception e) {
