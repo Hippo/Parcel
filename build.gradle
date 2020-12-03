@@ -32,7 +32,7 @@ dependencies {
 shadowJar {
     dependencies {
         exclude(dependency {
-            !id.moduleGroup.startsWith('org.ow2')
+            !it.moduleGroup.startsWith('org.ow2')
         })
     }
 }
