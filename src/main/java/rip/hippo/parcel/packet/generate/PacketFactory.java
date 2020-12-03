@@ -5,13 +5,18 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import rip.hippo.parcel.loader.StubClassLoader;
 import rip.hippo.parcel.packet.Packet;
+import rip.hippo.parcel.packet.annotation.GetterField;
+import rip.hippo.parcel.packet.annotation.SetterField;
+import rip.hippo.parcel.util.UnsafeUtil;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
 import java.util.function.Function;
 
 import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Opcodes.LONG;
 
 /**
  * @author Hippo
@@ -24,14 +29,99 @@ public enum PacketFactory {
     private static final Map<String, Class<Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<Packet>>() {{
 
     }});
-
     private static final Map<Class<Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
-
+    private static final Set<String> GENERATED_PACKET_CLASSES = new HashSet<>();
     private static final StubClassLoader CLASS_LOADER = new StubClassLoader();
 
     public static Packet create(Object raw) {
         String rawClassName = raw.getClass().getSimpleName();
         Class<Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
+
+        if (!GENERATED_PACKET_CLASSES.contains(rawClassName)) {
+            String packetWrapperInternal = Type.getInternalName(packetClass);
+            String unsafeUtilInternal = Type.getInternalName(UnsafeUtil.class);
+
+            GENERATED_PACKET_CLASSES.add(rawClassName);
+
+            Map<String, Long> fieldOffsetMap = new HashMap<>();
+            for (Field field : raw.getClass().getDeclaredFields()) {
+                if (!Modifier.isStatic(field.getModifiers())) {
+                    fieldOffsetMap.put(field.getName(), UnsafeUtil.getUnsafe().objectFieldOffset(field));
+                }
+            }
+
+
+            ClassNode classNode = new ClassNode();
+            classNode.visit(V1_8, ACC_PUBLIC | ACC_FINAL, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), null, "java/lang/Object", new String[] {packetWrapperInternal});
+
+            FieldNode rawPacketField = new FieldNode(ACC_PUBLIC, "raw", "Ljava/lang/Object;", null, null);
+            classNode.fields.add(rawPacketField);
+
+            MethodNode constructorMethodNode = new MethodNode(ACC_PUBLIC, "<init>", "(Ljava/lang/Object;)V", null, null);
+            constructorMethodNode.instructions = new InsnList();
+            constructorMethodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+            constructorMethodNode.instructions.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Object", "<init>", "()V"));
+            constructorMethodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+            constructorMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
+            constructorMethodNode.instructions.add(new FieldInsnNode(PUTFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
+            constructorMethodNode.instructions.add(new InsnNode(RETURN));
+            classNode.methods.add(constructorMethodNode);
+
+            for (Method method : raw.getClass().getDeclaredMethods()) {
+                GetterField getterField = method.getAnnotation(GetterField.class);
+                SetterField setterField = method.getAnnotation(SetterField.class);
+
+                if (getterField != null) {
+                    long fieldOffset = fieldOffsetMap.get(getterField.name());
+
+
+                    MethodNode methodNode = new MethodNode(ACC_PUBLIC, method.getName(), Type.getMethodDescriptor(method), null, null);
+                    methodNode.instructions = new InsnList();
+                    methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC, unsafeUtilInternal, "getUnsafe", "()Lsun/misc/Unsafe;"));
+                    methodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+                    methodNode.instructions.add(new FieldInsnNode(GETFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
+                    methodNode.instructions.add(new LdcInsnNode(fieldOffset));
+                    String integerMethod = null;
+                    switch (getterField.type()) {
+                        case BOOLEAN:
+                            integerMethod = "getBoolean";
+                            break;
+                        case BYTE:
+                            integerMethod = "getByte";
+                            break;
+                        case SHORT:
+                            integerMethod = "getShort";
+                            break;
+                        case CHAR:
+                            integerMethod = "getChar";
+                            break;
+                        case INT:
+                            integerMethod = "getInt";
+                            break;
+                        case LONG:
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getLong", "(Ljava/lang/Object;J)J"));
+                            methodNode.instructions.add(new InsnNode(LRETURN));
+                            break;
+                        case DOUBLE:
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getDouble", "(Ljava/lang/Object;J)D"));
+                            methodNode.instructions.add(new InsnNode(DRETURN));
+                            break;
+                        case OBJECT:
+                            methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", "getObject", "(Ljava/lang/Object;J)J"));
+                            methodNode.instructions.add(new TypeInsnNode(CHECKCAST, Type.getInternalName(method.getReturnType())));
+                            methodNode.instructions.add(new InsnNode(ARETURN));
+                    }
+
+                    if (integerMethod != null) {
+                        methodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, "sun/misc/Unsafe", integerMethod, String.format("(Ljava/lang/Object;J)%s", Type.getDescriptor(method.getReturnType()))));
+                        methodNode.instructions.add(new InsnNode(IRETURN));
+                    }
+                } else if (setterField != null) {
+
+                }
+            }
+
+        }
 
         PacketFunction objectWrapperFunction = PACKET_INSTANCE_FUNCTION_MAP.computeIfAbsent(packetClass, ignored -> {
             String packetFunctionInternal = Type.getInternalName(PacketFunction.class);

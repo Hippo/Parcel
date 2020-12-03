@@ -12,5 +12,6 @@ public enum FieldType {
     CHAR,
     INT,
     LONG,
+    DOUBLE,
     OBJECT
 }
