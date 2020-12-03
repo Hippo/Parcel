@@ -4,6 +4,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import rip.hippo.lwjeb.bus.PubSub;
 import rip.hippo.parcel.Parcel;
 import rip.hippo.parcel.event.ParcelEvent;
+import rip.hippo.parcel.wrapper.PlayerWrapper;
+import rip.hippo.parcel.wrapper.PlayerWrapperFactory;
 
 /**
  * @author Hippo
@@ -13,9 +15,11 @@ import rip.hippo.parcel.event.ParcelEvent;
 public final class ParcelPlugin extends JavaPlugin implements Parcel {
 
     private final PubSub<ParcelEvent> pubSub;
+    private final PlayerWrapper playerWrapper;
 
     public ParcelPlugin() {
         this.pubSub = new PubSub<>();
+        this.playerWrapper = PlayerWrapperFactory.createPlayerWrapper();
     }
 
     @Override
@@ -26,5 +30,10 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
     @Override
     public void unsubscribe(JavaPlugin javaPlugin) {
         pubSub.subscribe(javaPlugin);
+    }
+
+    @Override
+    public PlayerWrapper getPlayerWrapper() {
+        return playerWrapper;
     }
 }
