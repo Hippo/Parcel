@@ -207,7 +207,7 @@ public enum PacketFactory {
             }
         });
 
-        return null;
+        return objectWrapperFunction.apply(raw);
     }
 
 }
