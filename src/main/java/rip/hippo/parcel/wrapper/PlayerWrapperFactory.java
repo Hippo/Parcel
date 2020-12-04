@@ -7,11 +7,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import rip.hippo.parcel.loader.StubClassLoader;
-import rip.hippo.parcel.plugin.ParcelPlugin;
-
-import javax.management.ReflectionException;
-
-import java.io.FileOutputStream;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -55,7 +50,7 @@ public enum PlayerWrapperFactory {
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, networkManagerInternal, "channel", String.format("L%s;", channelInternal)));
         getChannelMethodNode.instructions.add(new InsnNode(ARETURN));
 
-        MethodNode sendPacketMethodNode = new MethodNode(ACC_PUBLIC, "player", String.format("(%s%s)%s", String.format("L%s;", playerInternal), "Ljava/lang/Object;", String.format("L%s;", channelInternal)), null, null);
+        MethodNode sendPacketMethodNode = new MethodNode(ACC_PUBLIC, "sendPacket", String.format("(%s%s)V", String.format("L%s;", playerInternal), "Ljava/lang/Object;"), null, null);
         sendPacketMethodNode.instructions = new InsnList();
         sendPacketMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
         sendPacketMethodNode.instructions.add(new TypeInsnNode(CHECKCAST, craftPlayerInternal));
