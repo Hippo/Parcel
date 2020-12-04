@@ -6,4 +6,5 @@ package rip.hippo.parcel.packet;
  * @since 1.0.0
  */
 public interface Packet {
+    Object toRaw();
 }

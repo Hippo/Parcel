@@ -80,6 +80,13 @@ public enum PacketFactory {
             constructorMethodNode.instructions.add(new InsnNode(RETURN));
             classNode.methods.add(constructorMethodNode);
 
+            MethodNode toRawMethodNode = new MethodNode(ACC_PUBLIC, "toRaw", "()Ljava/lang/Object;", null, null);
+            toRawMethodNode.instructions = new InsnList();
+            toRawMethodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+            toRawMethodNode.instructions.add(new FieldInsnNode(GETFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
+            toRawMethodNode.instructions.add(new InsnNode(ARETURN));
+            classNode.methods.add(toRawMethodNode);
+
 
             for (Method method : packetClass.getDeclaredMethods()) {
                 GetterField getterField = method.getAnnotation(GetterField.class);
