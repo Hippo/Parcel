@@ -1,6 +1,7 @@
 package rip.hippo.parcel.packet.inject;
 
 import org.bukkit.entity.Player;
+import rip.hippo.parcel.packet.Packet;
 
 /**
  * @author Hippo
@@ -10,4 +11,5 @@ import org.bukkit.entity.Player;
 public interface PlayerChannelInjector {
     void inject(Player player);
     void uninject(Player player);
+    void sendPacket(Player player, Packet packet);
 }

@@ -11,4 +11,5 @@ import org.bukkit.entity.Player;
  */
 public interface PlayerWrapper {
     Channel getChannel(Player player);
+    void sendPacket(Player player, Object packet);
 }

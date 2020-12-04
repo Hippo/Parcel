@@ -7,11 +7,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import rip.hippo.parcel.loader.StubClassLoader;
-import rip.hippo.parcel.plugin.ParcelPlugin;
-
-import javax.management.ReflectionException;
-
-import java.io.FileOutputStream;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -34,6 +29,7 @@ public enum PlayerWrapperFactory {
         String entityPlayerInternal = String.format("net/minecraft/server/%s/EntityPlayer", VERSION);
         String playerConnectionInternal = String.format("net/minecraft/server/%s/PlayerConnection", VERSION);
         String networkManagerInternal = String.format("net/minecraft/server/%s/NetworkManager", VERSION);
+        String packetInternal = String.format("net/minecraft/server/%s/Packet", VERSION);
 
         ClassNode classNode = new ClassNode();
         classNode.visit(V1_8, ACC_PUBLIC | ACC_FINAL, "rip/hippo/parcel/generated/GeneratedPlayerWrapper", null, "java/lang/Object", new String[] {playerWrapperInternal});
@@ -54,8 +50,22 @@ public enum PlayerWrapperFactory {
         getChannelMethodNode.instructions.add(new FieldInsnNode(GETFIELD, networkManagerInternal, "channel", String.format("L%s;", channelInternal)));
         getChannelMethodNode.instructions.add(new InsnNode(ARETURN));
 
+        MethodNode sendPacketMethodNode = new MethodNode(ACC_PUBLIC, "sendPacket", String.format("(%s%s)V", String.format("L%s;", playerInternal), "Ljava/lang/Object;"), null, null);
+        sendPacketMethodNode.instructions = new InsnList();
+        sendPacketMethodNode.instructions.add(new VarInsnNode(ALOAD, 1));
+        sendPacketMethodNode.instructions.add(new TypeInsnNode(CHECKCAST, craftPlayerInternal));
+        sendPacketMethodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, craftPlayerInternal, "getHandle", String.format("()L%s;", entityPlayerInternal)));
+        sendPacketMethodNode.instructions.add(new FieldInsnNode(GETFIELD, entityPlayerInternal, "playerConnection", String.format("L%s;", playerConnectionInternal)));
+        sendPacketMethodNode.instructions.add(new VarInsnNode(ALOAD, 2));
+        sendPacketMethodNode.instructions.add(new TypeInsnNode(CHECKCAST, packetInternal));
+        sendPacketMethodNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, playerConnectionInternal, "sendPacket", String.format("(%s)V", String.format("L%s;", packetInternal))));
+        sendPacketMethodNode.instructions.add(new InsnNode(RETURN));
+
+
+
         classNode.methods.add(constructorMethodNode);
         classNode.methods.add(getChannelMethodNode);
+        classNode.methods.add(sendPacketMethodNode);
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         classNode.accept(classWriter);

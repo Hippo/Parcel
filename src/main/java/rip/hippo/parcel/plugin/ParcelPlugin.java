@@ -31,7 +31,6 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
         this.playerChannelInjector = new StandardChannelInjector(this);
     }
 
-
     @Override
     public void onEnable() {
         Bukkit.getPluginManager().registerEvents(new PlayerConnectionListener(this), this);

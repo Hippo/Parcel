@@ -27,7 +27,7 @@ public final class ParcelChannelDuplexHandler extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        Packet packet = PacketFactory.create(msg);
+        Packet packet = PacketFactory.from(msg);
         OutboundPacketEvent outboundPacketEvent = new OutboundPacketEvent(player, packet);
         parcel.post(outboundPacketEvent);
         if (outboundPacketEvent.isCancelled()) {
@@ -39,7 +39,7 @@ public final class ParcelChannelDuplexHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Packet packet = PacketFactory.create(msg);
+        Packet packet = PacketFactory.from(msg);
         InboundPacketEvent inboundPacketEvent = new InboundPacketEvent(player, packet);
         parcel.post(inboundPacketEvent);
         super.channelRead(ctx, msg);

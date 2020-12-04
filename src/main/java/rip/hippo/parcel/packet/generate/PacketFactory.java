@@ -1,5 +1,9 @@
 package rip.hippo.parcel.packet.generate;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import jdk.nashorn.internal.ir.CallNode;
+import org.bukkit.Bukkit;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -12,6 +16,7 @@ import rip.hippo.parcel.packet.impl.in.PacketPlayInAbilities;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInArmAnimation;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInBlockDig;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
+import rip.hippo.parcel.packet.impl.out.PacketPlayOutAnimation;
 import rip.hippo.parcel.util.UnsafeUtil;
 
 import java.lang.reflect.Field;
@@ -29,25 +34,44 @@ import static org.objectweb.asm.Opcodes.*;
 public enum PacketFactory {
     ;
 
-    private static final Map<String, Class<? extends Packet>> RAW_TO_WRAPPER_MAP = Collections.unmodifiableMap(new HashMap<String, Class<? extends Packet>>() {{
-        put("PacketPlayInChat", PacketPlayInChat.class);
-        put("PacketPlayInAbilities", PacketPlayInAbilities.class);
-        put("PacketPlayInArmAnimation", PacketPlayInArmAnimation.class);
-        put("PacketPlayInBlockDig", PacketPlayInBlockDig.class);
-    }});
+    private static final String VERSION = "v" + Bukkit.getServer().getClass().getName().replaceAll("[^((\\d+)_(\\d+)_R(\\d+))]", "");
+    private static final BiMap<String, Class<? extends Packet>> RAW_TO_WRAPPER_MAP = HashBiMap.create();
 
     private static final Map<Class<? extends Packet>, PacketFunction> PACKET_INSTANCE_FUNCTION_MAP = new HashMap<>();
     private static final Set<String> GENERATED_PACKET_CLASSES = new HashSet<>();
     private static final StubClassLoader CLASS_LOADER = new StubClassLoader();
 
     @SuppressWarnings("unchecked")
-    public static <T extends Packet> T create(Object raw) {
+    public static <T extends Packet> T from(Object raw) {
         String rawClassName = raw.getClass().getSimpleName();
         Class<? extends Packet> packetClass = RAW_TO_WRAPPER_MAP.get(rawClassName);
 
         if (packetClass == null) {
             return null;
         }
+
+        ensureWrapperPacket(packetClass, raw);
+        PacketFunction packetFunction = getPacketFunction(packetClass, rawClassName);
+
+        return (T) packetFunction.apply(raw);
+    }
+
+    public static <T extends Packet> T create(Class<T> packetClass) {
+        BiMap<Class<? extends Packet>, String> inverse = RAW_TO_WRAPPER_MAP.inverse();
+        String rawClassName = inverse.get(packetClass);
+        String fullRawClassName = String.format("net.minecraft.server.%s.%s", VERSION, rawClassName);
+        try {
+            Object raw = UnsafeUtil.getUnsafe().allocateInstance(Class.forName(fullRawClassName));
+            ensureWrapperPacket(packetClass, raw);
+            PacketFunction packetFunction = getPacketFunction(packetClass, rawClassName);
+            return packetClass.cast(packetFunction.apply(raw));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void ensureWrapperPacket(Class<? extends Packet> packetClass, Object raw) {
+        String rawClassName = raw.getClass().getSimpleName();
 
         if (!GENERATED_PACKET_CLASSES.contains(rawClassName)) {
             String packetWrapperInternal = Type.getInternalName(packetClass);
@@ -79,6 +103,13 @@ public enum PacketFactory {
             constructorMethodNode.instructions.add(new FieldInsnNode(PUTFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
             constructorMethodNode.instructions.add(new InsnNode(RETURN));
             classNode.methods.add(constructorMethodNode);
+
+            MethodNode toRawMethodNode = new MethodNode(ACC_PUBLIC, "toRaw", "()Ljava/lang/Object;", null, null);
+            toRawMethodNode.instructions = new InsnList();
+            toRawMethodNode.instructions.add(new VarInsnNode(ALOAD, 0));
+            toRawMethodNode.instructions.add(new FieldInsnNode(GETFIELD, String.format("rip/hippo/parcel/generated/wrappers/%s", rawClassName), "raw", "Ljava/lang/Object;"));
+            toRawMethodNode.instructions.add(new InsnNode(ARETURN));
+            classNode.methods.add(toRawMethodNode);
 
 
             for (Method method : packetClass.getDeclaredMethods()) {
@@ -200,8 +231,10 @@ public enum PacketFactory {
             byte[] classBytes = classWriter.toByteArray();
             CLASS_LOADER.createClass(classNode.name.replace('/', '.'), classBytes);
         }
+    }
 
-        PacketFunction objectWrapperFunction = PACKET_INSTANCE_FUNCTION_MAP.computeIfAbsent(packetClass, ignored -> {
+    private static PacketFunction getPacketFunction(Class<? extends Packet> packetClass, String rawClassName) {
+        return PACKET_INSTANCE_FUNCTION_MAP.computeIfAbsent(packetClass, ignored -> {
             String packetFunctionInternal = Type.getInternalName(PacketFunction.class);
             String packetInternalName = Type.getInternalName(Packet.class);
 
@@ -237,8 +270,14 @@ public enum PacketFactory {
                 throw new RuntimeException(e);
             }
         });
+    }
 
-        return (T) objectWrapperFunction.apply(raw);
+    static {
+        RAW_TO_WRAPPER_MAP.put("PacketPlayInChat", PacketPlayInChat.class);
+        RAW_TO_WRAPPER_MAP.put("PacketPlayInAbilities", PacketPlayInAbilities.class);
+        RAW_TO_WRAPPER_MAP.put("PacketPlayInArmAnimation", PacketPlayInArmAnimation.class);
+        RAW_TO_WRAPPER_MAP.put("PacketPlayInBlockDig", PacketPlayInBlockDig.class);
+        RAW_TO_WRAPPER_MAP.put("PacketPlayOutAnimation", PacketPlayOutAnimation.class);
     }
 
 }

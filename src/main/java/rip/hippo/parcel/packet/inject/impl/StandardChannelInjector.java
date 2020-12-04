@@ -3,6 +3,7 @@ package rip.hippo.parcel.packet.inject.impl;
 import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import rip.hippo.parcel.Parcel;
+import rip.hippo.parcel.packet.Packet;
 import rip.hippo.parcel.packet.channel.ParcelChannelDuplexHandler;
 import rip.hippo.parcel.packet.inject.PlayerChannelInjector;
 
@@ -33,5 +34,10 @@ public final class StandardChannelInjector implements PlayerChannelInjector {
         if (channel != null && channel.pipeline().get("parcel_pipeline") != null) {
             channel.pipeline().remove("parcel_pipeline");
         }
+    }
+
+    @Override
+    public void sendPacket(Player player, Packet packet) {
+        parcel.getPlayerWrapper().sendPacket(player, packet.toRaw());
     }
 }
