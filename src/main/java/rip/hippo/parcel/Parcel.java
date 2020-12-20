@@ -6,7 +6,7 @@ import rip.hippo.parcel.wrapper.PlayerWrapper;
 
 /**
  * @author Hippo
- * @version 1.0.0, 12/2/20
+ * @version 1.0.1, 12/2/20
  * @since 1.0.0
  */
 public interface Parcel {
