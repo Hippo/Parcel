@@ -6,9 +6,7 @@ import rip.hippo.lwjeb.annotation.Handler;
 import rip.hippo.lwjeb.bus.PubSub;
 import rip.hippo.parcel.Parcel;
 import rip.hippo.parcel.event.ParcelEvent;
-import rip.hippo.parcel.event.impl.InboundPacketEvent;
 import rip.hippo.parcel.listener.PlayerConnectionListener;
-import rip.hippo.parcel.packet.impl.in.PacketPlayInBlockDig;
 import rip.hippo.parcel.packet.inject.PlayerChannelInjector;
 import rip.hippo.parcel.packet.inject.impl.StandardChannelInjector;
 import rip.hippo.parcel.wrapper.PlayerWrapper;
@@ -16,7 +14,7 @@ import rip.hippo.parcel.wrapper.PlayerWrapperFactory;
 
 /**
  * @author Hippo
- * @version 1.0.0, 12/2/20
+ * @version 1.0.1, 12/2/20
  * @since 1.0.0
  */
 public final class ParcelPlugin extends JavaPlugin implements Parcel {
@@ -37,8 +35,8 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
     }
 
     @Override
-    public void subscribe(JavaPlugin javaPlugin) {
-        pubSub.subscribe(javaPlugin);
+    public void subscribe(Object parent) {
+        pubSub.subscribe(parent);
     }
 
     @Override
@@ -47,8 +45,8 @@ public final class ParcelPlugin extends JavaPlugin implements Parcel {
     }
 
     @Override
-    public void unsubscribe(JavaPlugin javaPlugin) {
-        pubSub.subscribe(javaPlugin);
+    public void unsubscribe(Object parent) {
+        pubSub.subscribe(parent);
     }
 
     @Override
