@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'rip.hippo'
-version '1.0.1'
+version '1.0.2'
 
 repositories {
     mavenCentral()
@@ -35,6 +35,8 @@ shadowJar {
             !it.moduleGroup.startsWith('org.ow2')
         })
     }
+
+    relocate 'org.objectweb', 'rip.hippo.parcel.org.objectweb'
 }
 
 publishing {

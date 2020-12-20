@@ -2,7 +2,6 @@ package rip.hippo.parcel.plugin;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import rip.hippo.lwjeb.annotation.Handler;
 import rip.hippo.lwjeb.bus.PubSub;
 import rip.hippo.parcel.Parcel;
 import rip.hippo.parcel.event.ParcelEvent;
