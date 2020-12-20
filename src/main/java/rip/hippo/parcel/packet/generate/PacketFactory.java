@@ -17,6 +17,7 @@ import rip.hippo.parcel.packet.impl.in.PacketPlayInArmAnimation;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInBlockDig;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
 import rip.hippo.parcel.packet.impl.out.PacketPlayOutAnimation;
+import rip.hippo.parcel.packet.impl.out.PacketPlayOutSpawnEntity;
 import rip.hippo.parcel.util.UnsafeUtil;
 
 import java.lang.reflect.Field;
@@ -278,6 +279,7 @@ public enum PacketFactory {
         RAW_TO_WRAPPER_MAP.put("PacketPlayInArmAnimation", PacketPlayInArmAnimation.class);
         RAW_TO_WRAPPER_MAP.put("PacketPlayInBlockDig", PacketPlayInBlockDig.class);
         RAW_TO_WRAPPER_MAP.put("PacketPlayOutAnimation", PacketPlayOutAnimation.class);
+        RAW_TO_WRAPPER_MAP.put("PacketPlayOutSpawnEntity", PacketPlayOutSpawnEntity.class);
     }
 
 }
