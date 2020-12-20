@@ -1,6 +1,6 @@
 name: Parcel
 main: rip.hippo.parcel.plugin.ParcelPlugin
-version: 1.0.1
+version: 1.1.0
 author: Hippo
 depend:
   - LWJEB

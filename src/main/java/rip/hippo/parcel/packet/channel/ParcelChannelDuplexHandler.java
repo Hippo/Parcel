@@ -30,9 +30,7 @@ public final class ParcelChannelDuplexHandler extends ChannelDuplexHandler {
         Packet packet = PacketFactory.from(msg);
         OutboundPacketEvent outboundPacketEvent = new OutboundPacketEvent(player, packet);
         parcel.post(outboundPacketEvent);
-        if (outboundPacketEvent.isCancelled()) {
-            promise.cancel(false);
-        } else {
+        if (!outboundPacketEvent.isCancelled()) {
             super.write(ctx, msg, promise);
         }
     }
