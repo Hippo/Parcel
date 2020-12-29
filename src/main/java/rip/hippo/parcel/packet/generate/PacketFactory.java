@@ -15,8 +15,7 @@ import rip.hippo.parcel.packet.impl.in.PacketPlayInAbilities;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInArmAnimation;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInBlockDig;
 import rip.hippo.parcel.packet.impl.in.PacketPlayInChat;
-import rip.hippo.parcel.packet.impl.out.PacketPlayOutAnimation;
-import rip.hippo.parcel.packet.impl.out.PacketPlayOutSpawnEntity;
+import rip.hippo.parcel.packet.impl.out.*;
 import rip.hippo.parcel.util.UnsafeUtil;
 
 import java.lang.reflect.Field;
@@ -267,13 +266,21 @@ public enum PacketFactory {
         });
     }
 
+    private static void unsafePut(Class<? extends Packet> packetClass) {
+        RAW_TO_WRAPPER_MAP.put(packetClass.getSimpleName(), packetClass);
+    }
+
     static {
-        RAW_TO_WRAPPER_MAP.put("PacketPlayInChat", PacketPlayInChat.class);
-        RAW_TO_WRAPPER_MAP.put("PacketPlayInAbilities", PacketPlayInAbilities.class);
-        RAW_TO_WRAPPER_MAP.put("PacketPlayInArmAnimation", PacketPlayInArmAnimation.class);
-        RAW_TO_WRAPPER_MAP.put("PacketPlayInBlockDig", PacketPlayInBlockDig.class);
-        RAW_TO_WRAPPER_MAP.put("PacketPlayOutAnimation", PacketPlayOutAnimation.class);
-        RAW_TO_WRAPPER_MAP.put("PacketPlayOutSpawnEntity", PacketPlayOutSpawnEntity.class);
+        unsafePut(PacketPlayInChat.class);
+        unsafePut(PacketPlayInAbilities.class);
+        unsafePut(PacketPlayInArmAnimation.class);
+        unsafePut(PacketPlayInBlockDig.class);
+        unsafePut(PacketPlayOutAnimation.class);
+        unsafePut(PacketPlayOutSpawnEntity.class);
+        unsafePut(PacketPlayOutScoreboardDisplayObjective.class);
+        unsafePut(PacketPlayOutScoreboardObjective.class);
+        unsafePut(PacketPlayOutScoreboardScore.class);
+        unsafePut(PacketPlayOutScoreboardTeam.class);
 
         for (Map.Entry<String, Class<? extends Packet>> stringClassEntry : RAW_TO_WRAPPER_MAP.entrySet()) {
             String simpleName = stringClassEntry.getKey();
