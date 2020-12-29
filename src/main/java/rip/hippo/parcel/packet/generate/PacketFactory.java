@@ -281,6 +281,7 @@ public enum PacketFactory {
         unsafePut(PacketPlayOutScoreboardObjective.class);
         unsafePut(PacketPlayOutScoreboardScore.class);
         unsafePut(PacketPlayOutScoreboardTeam.class);
+        unsafePut(PacketPlayOutPlayerInfo.class);
 
         for (Map.Entry<String, Class<? extends Packet>> stringClassEntry : RAW_TO_WRAPPER_MAP.entrySet()) {
             String simpleName = stringClassEntry.getKey();
